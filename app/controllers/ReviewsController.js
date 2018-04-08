@@ -5,6 +5,7 @@ var Account=require('../../app/models/account');
 var DishReview=require('../../app/models/dishreview');
 var Restaurant = require('../../app/models/restaurant');
 var Logger=require('../../app/services/loggerService');
+var _=require('lodash');
 
 
 //for restaurant
@@ -177,11 +178,11 @@ res.status(200).send(false);
 //offers
 exports.getOffers=function(req,res)
 {
+    //to be continue
 var d=new Date();
 d.setHours(d.getHours()-1);
 
-console.log(d.toISOString());
-DishReview.find({"Reviews.UserId":req.decoded.id,"Reviews.Created":{$gte:d.toISOString()}},{"Id":1},function(err,result){
+DishReview.find({"Reviews.UserId":req.decoded.id,"Reviews.Created":{$gte:d.toISOString()}},{"Id":1,"Reviews.$":1},function(err,result){
 
 if(err)
 {
@@ -190,21 +191,41 @@ if(err)
 }
 if(result)
 {
-    Restaurant.find({"Dishes":{$in:result},"Deals":{$ne:null}},function(error,result){
-        if(err)
+    console.log(result);
+    var dishesid=_.map(result,'_id');
+    
+    Restaurant.find({"Dishes":{$in:dishesid},"Deals":{$ne:null}},function(error,result1){
+        if(error)
         {
-            console.log(err);
+            console.log(error);
             return;
         }
-        if(result)
+
+        if(result1)
         {
-            console.log(result);
+            var coupondata=[];
+            for(var i=0;i<result1.length;i++)
+            {
+                for(var j=0;j<result.length;j++)
+                {
+                    var lowestTime=result[0].Reviews[0].Created;
+                    if(result1[i].Dishes.indexOf(result[j]._id)>-1)
+                    {
+                      if(lowestTime<result[j].Reviews.Created)
+                      {
+                          lowestTime=result[j].Reviews.Created;
+                      }
+                    }
+                }
+                coupondata=[lowestTime];
+            }
+
+
         }
 
-
+     return res.status(200).send(coupondata);
     });
-    console.log(result);
-    console.log(req.decoded.id)
+    
 }
 
 });

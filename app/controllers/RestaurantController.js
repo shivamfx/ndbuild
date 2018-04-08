@@ -4,6 +4,7 @@ var Restaurant = require('../../app/models/restaurant'); // get our mongoose mod
 var Account = require('../../app/models/account'); // get our mongoose model
 var Dish=require('../../app/models/dish')
 var Logger = require('../../app/services/loggerService');
+var _=require('lodash');
 
 //add by admin updated
 exports.addRestaurant = function (req, res) {
@@ -123,7 +124,7 @@ exports.getDishesinRestaurant=function(req,res)
     _id: resID
   }, function (err, result) {
     if (err) {
-      Logger.logger(err, "", req.body, 'RestaurantController getResturant 3', 'not able to fetch data in the restaurant');
+      Logger.logger(err, "", req.body, 'RestaurantController getResturant', 'not able to fetch data in the restaurant');
       return res.status(500);
     }
     if (!result) {
@@ -139,18 +140,28 @@ exports.getDishesinRestaurant=function(req,res)
        console.log(arrDishes);
       Dish.find({_id:{$in:arrDishes}},function(err,result1){
         if (err) {
-          Logger.logger(err, "", req.body, 'RestaurantController getDishes 3', 'not able to fetch data in the dish');
+          Logger.logger(err, "", req.body, 'RestaurantController getDishes','not able to fetch data in the dish');
           return res.status(500);
         }
         if (!result1) {
           Logger.logger(err, "", req.body, 'RestaurantController getDishes', 'result empty not found');
           return res.status(400).send("not found");
         } else {
-          res.status(200).send(result1);
+         //process result in approprate format
+
+
+      
+      var data = _(result1).groupBy('MenuDivision')
+    .map(function(items, i) {
+      return {
+        MenuDivision: i,
+        details:items
+      };
+    }).value();
+
+          res.status(200).send(data);
         }
       });
-
-
 
      }
 
